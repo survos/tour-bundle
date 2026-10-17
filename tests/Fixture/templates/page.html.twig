@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/driver.css"><style>
+[hidden]{display:none!important}body{font:18px system-ui;margin:2rem}a,button{padding:.65rem;display:inline-block}button{cursor:pointer}.dropdown-menu{display:none}.dropdown-menu.show{display:block}.navbar-nav{display:flex;list-style:none;gap:1rem;padding:0}.mobile{display:none}.d-none{display:none}.nav-link{color:#125}#scan{padding:2rem;border:1px solid #ccc}#text{margin:2rem 0}.driver-popover{max-width:350px}
+@media(max-width:600px){body{margin:1rem}.desktop{display:none}.mobile{display:block}.mobile nav:not(.open){display:none}.navbar-nav{display:block}}
+</style></head><body>
+<h1>Newspaper exploration fixture</h1>
+<div class="desktop">{{ menuHtml|raw }}</div>
+<div class="mobile"><button type="button" id="mobile-toggle" aria-expanded="false">Navigation</button><nav>{{ menuHtml|raw }}</nav></div>
+{% if not empty %}
+<div id="text">Generated article groups may be partial and unreviewed.</div>
+<button id="scan" type="button">Scan / Text</button>
+<twig:Tour:Step id="scan-text" selector="#scan" title="Scan and text" content="Switch between the page scan and its linked text." :order="70" />
+{% endif %}
+<div id="widgets"><twig:Tour name="page" offer="once" /></div>
+<twig:Tour name="other" />
+<script type="module" src="/app.js"></script>
+</body></html>

@@ -1,0 +1,10 @@
+{% set controller = survos_stimulus('tour-bundle', 'tour') %}
+{% set labels = this.labels %}
+<div {{ attributes }} {{ stimulus_controller(controller, {name: name, offer: offer, version: version, app: this.appId, labels: labels}) }}>
+    <button type="button" hidden {{ stimulus_target(controller, 'replay') }} {{ stimulus_action(controller, 'start') }}>{{ labels.replay }}</button>
+    <div hidden role="region" aria-label="{{ labels.replay }}" {{ stimulus_target(controller, 'invitation') }}>
+        <span>{{ labels.invitation }}</span>
+        <button type="button" {{ stimulus_action(controller, 'start') }}>{{ labels.start }}</button>
+        <button type="button" {{ stimulus_action(controller, 'dismiss') }}>{{ labels.later }}</button>
+    </div>
+</div>

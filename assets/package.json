@@ -1,0 +1,28 @@
+{
+  "name": "@survos/tour-bundle",
+  "version": "1.0.0",
+  "license": "MIT",
+  "peerDependencies": {
+    "@hotwired/stimulus": "^3.2.2"
+  },
+  "dependencies": {
+    "driver.js": "^1.4.0"
+  },
+  "symfony": {
+    "importmap": {
+      "driver.js": "^1.4.0",
+      "driver.js/dist/driver.css": "^1.4.0"
+    },
+    "controllers": {
+      "tour": {
+        "main": "src/controllers/tour_controller.js",
+        "webpackMode": "eager",
+        "fetch": "eager",
+        "enabled": true,
+        "autoimport": {
+          "driver.js/dist/driver.css": true
+        }
+      }
+    }
+  }
+}
