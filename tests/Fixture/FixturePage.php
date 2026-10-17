@@ -13,6 +13,8 @@ use Survos\MenuBundle\Event\MenuEvent;
 use Survos\MenuBundle\Renderer\ThemeRenderer;
 use Survos\MenuBundle\Service\MenuDispatcher;
 use Survos\TablerBundle\Menu\MenuBuilderTrait;
+use Survos\TourBundle\Menu\TourMenu;
+use Survos\TourBundle\Model\Tour;
 use Survos\TourBundle\Model\TourStep;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -30,6 +32,7 @@ final class FixturePage
         private readonly Environment $twig,
         private readonly MatcherInterface $matcher,
         private readonly TranslatorInterface $translator,
+        private readonly TourMenu $tours,
         RouterInterface $router,
     ) {
         $this->setTablerMenuHelpers($router);
@@ -57,12 +60,15 @@ final class FixturePage
         $this->add($menu, uri: '#no-copy', label: 'No copy', tour: ['id' => 'no-copy']);
     }
 
-    public function render(string $mode = 'survos', string $role = 'anonymous', bool $empty = false): string
+    public function render(string $mode = 'survos', string $role = 'anonymous', bool $empty = false, bool $menuControl = false): string
     {
         $menu = $empty ? $this->factory->createItem('PAGE_NAV') : $this->menu($role);
+        if ($menuControl) {
+            $this->tours->add($menu, new Tour('page', offer: 'once'));
+        }
         $html = $this->renderMenu($menu, $mode);
 
-        return $this->twig->render('page.html.twig', ['menuHtml' => $html, 'empty' => $empty]);
+        return $this->twig->render('page.html.twig', ['menuHtml' => $html, 'empty' => $empty, 'menuControl' => $menuControl]);
     }
 
     public function renderMenu(ItemInterface $menu, string $mode = 'survos', string $theme = 'navbar'): string

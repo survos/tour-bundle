@@ -15,7 +15,7 @@ if ('/app.js' === $path || '/driver.css' === $path) {
 $kernel = new Survos\TourBundle\Tests\Fixture\Kernel('browser', true);
 $kernel->boot();
 try {
-    echo $kernel->getContainer()->get(Survos\TourBundle\Tests\Fixture\FixturePage::class)->render($_GET['mode'] ?? 'survos', $_GET['role'] ?? 'anonymous', isset($_GET['empty']));
+    echo $kernel->getContainer()->get(Survos\TourBundle\Tests\Fixture\FixturePage::class)->render($_GET['mode'] ?? 'survos', $_GET['role'] ?? 'anonymous', isset($_GET['empty']), isset($_GET['menuControl']));
 } finally {
     $kernel->shutdown();
 }

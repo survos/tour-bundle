@@ -6,6 +6,46 @@ const title = (page) => page.locator('.driver-popover-title');
 const count = (page) => page.locator('.driver-popover-progress-text');
 
 for (const mode of ['survos', 'knp']) {
+    test(`${mode}: PHP menu replay needs no widget, responsive copies and invitation cleanup`, async ({ page }) => {
+        const errors = [];
+        page.on('pageerror', (error) => errors.push(error.message));
+        await page.goto(`/?mode=${mode}&menuControl=1`);
+        const menuReplay = page.locator('.desktop [data-tour-replay]');
+        await expect(menuReplay).toBeVisible();
+        await expect(page.locator('#widgets')).toHaveCount(0);
+        await expect(page.locator('[data-tour-invitation]')).toHaveCount(1);
+        await page.locator('[data-tour-invitation]').getByRole('button', { name: 'Not now' }).click();
+        await expect(page.locator('[data-tour-invitation]')).toHaveCount(0);
+        const url = page.url();
+        await menuReplay.focus();
+        await page.keyboard.press('Space');
+        await expect(title(page)).toHaveText('Newspapers');
+        await page.keyboard.press('Escape');
+        await expect(menuReplay).toBeFocused();
+        expect(page.url()).toBe(url);
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.getByRole('button', { name: 'Navigation', exact: true }).click();
+        const mobileReplay = page.locator('.mobile [data-tour-replay]');
+        await mobileReplay.click();
+        await expect(title(page)).toHaveText('Newspapers');
+        await expect(count(page)).toHaveText('1 of 4');
+        await page.keyboard.press('Escape');
+        await expect(mobileReplay).toBeFocused();
+        // A menu item can disconnect/reconnect without leaving a panel or listeners.
+        await page.evaluate(() => {
+            const node = document.querySelector('.mobile [data-tour-replay]');
+            const control = window.fixtureApplication.getControllerForElementAndIdentifier(node, node.dataset.controller);
+            control.disconnect(); control.connect();
+        });
+        await mobileReplay.click();
+        await expect(title(page)).toBeVisible();
+        await page.keyboard.press('Escape');
+        await page.goto(`/?mode=${mode}&menuControl=1&empty=1`);
+        await expect(page.locator('[data-tour-replay]:visible')).toHaveCount(0);
+        await expect(page.locator('[data-tour-invitation]')).toHaveCount(0);
+        expect(errors).toEqual([]);
+    });
+
     test(`${mode}: invitation, keyboard, escaped text, replay, dismissal and reconnect`, async ({ page }) => {
         const errors = [];
         page.on('pageerror', (error) => errors.push(error.message));

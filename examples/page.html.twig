@@ -1,0 +1,9 @@
+{# The application's existing control keeps its own normal behavior. #}
+<button id="view-mode" type="button">Choose a view</button>
+<twig:Tour:Step name="page" id="view-mode" selector="#view-mode"
+    titleKey="tour.view_mode.title" contentKey="tour.view_mode.content"
+    domain="messages" :order="40" />
+
+<section id="help" aria-label="Help">
+    <p>Help for the current page goes here.</p>
+</section>

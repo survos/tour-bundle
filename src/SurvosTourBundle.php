@@ -8,8 +8,10 @@ use Survos\FieldBundle\Registry\RouteMetaRegistry;
 use Survos\Kit\AbstractUxBundle;
 use Survos\Kit\SurvosKitBundle;
 use Survos\MenuBundle\Renderer\LinkAttributesDecoratorInterface;
+use Survos\TourBundle\Menu\TourMenu;
 use Survos\TourBundle\Menu\TourMenuDecorator;
 use Survos\TourBundle\Service\CopyResolver;
+use Survos\TourBundle\Service\TourLabels;
 use Survos\TourBundle\Twig\Components\Tour;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -41,6 +43,12 @@ final class SurvosTourBundle extends AbstractUxBundle
             new Reference('logger', ContainerInterface::NULL_ON_INVALID_REFERENCE),
         ]);
         $services->get(Tour::class)->arg('$appId', $config['app_id']);
+        $services->set(TourLabels::class);
+        if (interface_exists(\Knp\Menu\ItemInterface::class)) {
+            $services->set(TourMenu::class)
+                ->arg('$controllers', new Reference('survos_kit.twig.stimulus'))
+                ->arg('$appId', $config['app_id']);
+        }
         if (interface_exists(LinkAttributesDecoratorInterface::class)) {
             $services->set(TourMenuDecorator::class)->tag('survos_menu.link_attributes_decorator');
         }

@@ -11,7 +11,9 @@
 <button id="scan" type="button">Scan / Text</button>
 <twig:Tour:Step id="scan-text" selector="#scan" title="Scan and text" content="Switch between the page scan and its linked text." :order="70" />
 {% endif %}
+{% if not menuControl %}
 <div id="widgets"><twig:Tour name="page" offer="once" /></div>
 <twig:Tour name="other" />
+{% endif %}
 <script type="module" src="/app.js"></script>
 </body></html>

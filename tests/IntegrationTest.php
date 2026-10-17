@@ -10,6 +10,26 @@ use Survos\TourBundle\Tests\Fixture\Kernel;
 
 final class IntegrationTest extends TestCase
 {
+    public function testPhpMenuControlWorksWithoutALayoutWidget(): void
+    {
+        require_once __DIR__.'/Fixture/bootstrap.php';
+        $kernel = new Kernel('test', true);
+        $kernel->boot();
+        try {
+            $page = $kernel->getContainer()->get(FixturePage::class);
+            foreach (['survos', 'knp'] as $mode) {
+                $html = $page->render($mode, menuControl: true);
+                self::assertStringContainsString('data-tour-replay="page"', $html);
+                self::assertStringContainsString('Explain this page', $html);
+                self::assertStringNotContainsString('id="widgets"', $html);
+                self::assertStringContainsString('data-tour-control="page"', $html);
+                self::assertStringNotContainsString('Admin-only explanation', $html);
+            }
+        } finally {
+            $kernel->shutdown();
+        }
+    }
+
     public function testConsumerKernelRendersComponentsMenuModesAndResolvesAssets(): void
     {
         require_once __DIR__.'/Fixture/bootstrap.php';

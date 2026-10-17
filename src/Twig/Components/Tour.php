@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Survos\TourBundle\Twig\Components;
 
 use Survos\TourBundle\Model\Tour as TourDefinition;
-use Symfony\Contracts\Translation\TranslatorInterface;
+use Survos\TourBundle\Service\TourLabels;
 use Symfony\UX\TwigComponent\Attribute\AsTwigComponent;
 
 #[AsTwigComponent('Tour', template: '@SurvosTour/components/Tour.html.twig')]
@@ -15,7 +15,7 @@ final class Tour
     public string $offer = 'never';
     public string $version = '1';
 
-    public function __construct(private readonly TranslatorInterface $translator, public readonly string $appId = 'app')
+    public function __construct(private readonly TourLabels $labels, public readonly string $appId = 'app')
     {
     }
 
@@ -30,11 +30,6 @@ final class Tour
 
     public function getLabels(): array
     {
-        $labels = [];
-        foreach (['replay', 'invitation', 'start', 'later', 'back', 'next', 'done', 'close', 'progress'] as $key) {
-            $labels[$key] = $this->translator->trans($key, [], 'SurvosTour');
-        }
-
-        return $labels;
+        return $this->labels->all();
     }
 }

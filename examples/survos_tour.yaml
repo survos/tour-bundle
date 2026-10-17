@@ -1,0 +1,4 @@
+survos_tour:
+    app_id: my-application
+    translation_domain: messages
+    route_meta_fallback: false

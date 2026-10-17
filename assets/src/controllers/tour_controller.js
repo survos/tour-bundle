@@ -11,18 +11,24 @@ export default class extends Controller {
         version: { type: String, default: '1' },
         offer: { type: String, default: 'never' },
         labels: Object,
+        menu: { type: Boolean, default: false },
     };
 
     connect() {
         this.connected = true;
         this.cancelOther = (event) => { if (event.detail !== this) this.stop(); };
         this.refresh = () => this.scheduleRefresh();
+        this.dismissOther = (event) => {
+            if (event.detail === this.storageKey) { this.dismissedInMemory = this.storageKey; this.update(); }
+        };
         document.addEventListener('survos:tour-start', this.cancelOther);
+        document.addEventListener('survos:tour-dismiss', this.dismissOther);
         window.addEventListener('resize', this.refresh);
+        window.addEventListener('scroll', this.refresh, true);
         // Menus may arrive after the layout widget (Turbo, lazy controllers).
         this.observer = new MutationObserver((records) => {
             if (records.some((record) => !this.element.contains(record.target) &&
-                !record.target.closest?.('.driver-popover, .driver-overlay'))) this.scheduleRefresh();
+                !record.target.closest?.('.driver-popover, .driver-overlay, [data-tour-invitation]'))) this.scheduleRefresh();
         });
         this.observer.observe(document.body, { childList: true, subtree: true, attributes: true,
             attributeFilter: ['hidden', 'class', 'style', 'aria-expanded', 'data-tour-step'] });
@@ -33,9 +39,13 @@ export default class extends Controller {
         this.connected = false;
         this.observer?.disconnect();
         document.removeEventListener('survos:tour-start', this.cancelOther);
+        document.removeEventListener('survos:tour-dismiss', this.dismissOther);
         window.removeEventListener('resize', this.refresh);
+        window.removeEventListener('scroll', this.refresh, true);
         cancelAnimationFrame(this.frame);
         this.stop();
+        this.menuInvitation?.remove();
+        this.menuInvitation = null;
     }
 
     scheduleRefresh() {
@@ -71,10 +81,47 @@ export default class extends Controller {
     update() {
         const available = this.collect().length > 0;
         if (this.hasReplayTarget) this.replayTarget.hidden = !available;
+        if (this.menuValue) {
+            const wrapper = this.element.closest('[data-tour-control]');
+            if (wrapper && wrapper.hidden === available) wrapper.hidden = !available;
+            this.updateMenuInvitation(available);
+        }
         if (this.hasInvitationTarget) this.invitationTarget.hidden = !available || this.offerValue !== 'once' || this.dismissed;
         // If authorization/UI changes remove an active target, end safely. Replaying
         // collects a fresh set; we never open or click menu items to expose children.
         if (this.tour?.isActive() && this.activeTargets?.some((target) => !this.visible(target))) this.stop();
+    }
+
+    updateMenuInvitation(available) {
+        // Responsive menu copies share one invitation. Keep it attached visually to
+        // the first visible replay link; it is nonmodal and never steals focus.
+        const first = [...document.querySelectorAll('[data-tour-replay]')]
+            .find((node) => node.dataset.tourReplay === this.nameValue && this.visible(node));
+        const show = available && first === this.element && this.offerValue === 'once' && !this.dismissed;
+        if (!show) { this.menuInvitation?.remove(); this.menuInvitation = null; return; }
+        if (!this.menuInvitation) {
+            const panel = document.createElement('div');
+            panel.dataset.tourInvitation = this.nameValue;
+            panel.setAttribute('role', 'region');
+            panel.setAttribute('aria-label', this.labelsValue.replay);
+            panel.style.cssText = 'position:fixed;z-index:9999;max-width:min(22rem,calc(100vw - 2rem));padding:1rem;border:1px solid #aaa;border-radius:.5rem;background:Canvas;color:CanvasText;box-shadow:0 3px 12px #0003;font:inherit;';
+            const text = document.createElement('p');
+            text.textContent = this.labelsValue.invitation;
+            panel.append(text);
+            for (const [label, action] of [['start', (event) => { this.start(event); }], ['later', () => { this.dismiss(true); }]]) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = this.labelsValue[label];
+                button.style.marginInlineEnd = '.5rem';
+                button.addEventListener('click', action);
+                panel.append(button);
+            }
+            this.menuInvitation = panel;
+            document.body.append(panel);
+        }
+        const rect = this.element.getBoundingClientRect();
+        this.menuInvitation.style.top = `${Math.min(rect.bottom + 8, Math.max(8, innerHeight - this.menuInvitation.offsetHeight - 8))}px`;
+        this.menuInvitation.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - this.menuInvitation.offsetWidth - 8))}px`;
     }
 
     get storageKey() {
@@ -90,10 +137,17 @@ export default class extends Controller {
         this.dismissedInMemory = this.storageKey;
         try { localStorage.setItem(this.storageKey, '1'); } catch { /* Private/blocked storage is nonfatal. */ }
         if (this.hasInvitationTarget) this.invitationTarget.hidden = true;
+        this.menuInvitation?.remove();
+        this.menuInvitation = null;
+        document.dispatchEvent(new CustomEvent('survos:tour-dismiss', { detail: this.storageKey }));
         if (event && this.hasReplayTarget) this.replayTarget.focus({ preventScroll: true });
     }
 
     start(event) {
+        event?.preventDefault?.();
+        // Keep a containing dropdown in its current state; Bootstrap's delegated
+        // click handler must not hide the targets immediately after collection.
+        if (this.menuValue) event?.stopPropagation?.();
         const initiatingControl = event?.currentTarget instanceof HTMLElement ? event.currentTarget : document.activeElement;
         this.stop();
         const steps = this.collect();

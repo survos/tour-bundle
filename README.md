@@ -4,7 +4,15 @@ Reusable, translated tours of rendered menus and explicit page controls. Driver.
 
 ## Install and configure
 
-Install `survos/tour-bundle` through the application's configured Satis repository. For local development use the existing `monolink` workflow; do not copy bundles into vendor or add Composer repository overrides. This implementation does not publish packages.
+Install `survos/tour-bundle` through the application's configured package repository:
+
+```bash
+composer require survos/tour-bundle
+php bin/console importmap:install
+php bin/console cache:clear
+```
+
+For menu integration, update menu-bundle and Tabler together to a compatible version (see below). For local development use the existing `monolink` workflow; do not copy bundles into vendor or add Composer repository overrides. On the mono workstation the linker is `/Users/tac/sites/mono/link /absolute/path/to/app`. Run it after Composer finishes, since a Composer update can replace symlinks.
 
 Flex must register `Survos\TourBundle\SurvosTourBundle`, the required kit bundle, and the usual TwigComponent/Stimulus bundles. Its UX recipe reads `assets/package.json`, registers `@survos/tour-bundle` in `assets/controllers.json`, and adds `driver.js` and `driver.js/dist/driver.css` to `importmap.php`. The CSS autoimport is required. Keep the application's standard Stimulus bootstrap. No app tour controller is needed.
 
@@ -16,7 +24,9 @@ survos_tour:
     route_meta_fallback: false    # see public-copy policy below
 ```
 
-## PHP menu metadata + one layout widget
+## PHP menu integration: no new Twig
+
+Normal menu integration has three parts: annotate existing menu items, supply translated copy, and add a replay item to any existing rendered menu slot in PHP. No new Twig, application JavaScript, or second menu list is needed. See the [complete example](examples/README.md) for files ready to adapt and an optional explicit non-menu control.
 
 In an existing MenuSlot listener using Tabler's `MenuBuilderTrait`:
 
@@ -35,10 +45,24 @@ public function pageNav(MenuEvent $event): void
 }
 ```
 
-```twig
-{# Once in the layout, alongside the menus already rendered there. #}
-<twig:Tour name="page" offer="once" version="1" />
+Inject `Survos\TourBundle\Menu\TourMenu` into your listener and place the control in the slot that suits your layout:
+
+```php
+use Survos\TourBundle\Menu\TourMenu;
+use Survos\TourBundle\Model\Tour;
+
+public function __construct(private readonly TourMenu $tours) {}
+
+#[AsMenuListener(MenuSlot::NAVBAR_END)]
+public function tourControl(MenuEvent $event): void
+{
+    $this->tours->add($event->menu, new Tour('page', version: '1'), icon: 'tabler:help-circle');
+}
 ```
+
+The item inherits the existing menu theme. `TourMenu::add()` accepts the parent menu, a typed `Tour`, an optional already translated `label`, and an optional `icon`. It mounts the shared controller on the real menu link, including keyboard support, visibility filtering, and focus restoration. No layout widget is required. Use any rendered slot, submenu, or an application's dedicated custom slot; a new slot must already have a place in the layout to be visible. The bundle does not add a hard-coded tour slot to every application.
+
+`new Tour('page', offer: 'once')` optionally offers Start / Not now in a nonmodal invitation anchored to the first visible replay item. The default `offer: 'never'` keeps only the menu item. Responsive copies share dismissal and show one invitation. With no eligible steps the item and its wrapper are hidden.
 
 ```yaml
 # translations/routes.en.yaml
@@ -70,7 +94,25 @@ Both Tabler `menu_renderer: survos` and `menu_renderer: knp` are supported. Knp 
 
 `Survos\TourBundle\Model\TourStep` is the author-facing, immutable PHP metadata DTO. Constructor arguments start with `Tour|string $tour`, stable `string $id`, and `int $order = 0`. Named options are `title`, `content`, `titleKey`, `contentKey`, `domain`, `parameters`, `placement`, `selector`, and `instance`. Invalid identities and placements fail at construction. Arrays and Tabler `tourOptions()` remain supported for compatibility.
 
-`Survos\TourBundle\Model\Tour` holds `name`, `version` and invitation `offer`. Share it with steps using `new TourStep($tour, 'paper-search', order: 20)` and pass it to the widget as `<twig:Tour :tour="tour" />`. The simple string-name widget API remains available. Copy resolution produces a separate `ResolvedTourStep`; consumers never construct translated renderer payloads.
+`Survos\TourBundle\Model\Tour` holds `name`, `version` and invitation `offer`. Share it with steps using `new TourStep($tour, 'paper-search', order: 20)` and pass it to `TourMenu::add()` or the optional widget as `<twig:Tour :tour="tour" />`. The string-name widget API remains available. Copy resolution produces a separate `ResolvedTourStep`; consumers never construct translated renderer payloads.
+
+```php
+$tour = new Tour(name: 'page', version: '2', offer: 'once');
+$step = new TourStep($tour, 'paper-search', order: 20);
+```
+
+The `Tour` object on a step identifies its tour; the replay control owns invitation/version behavior. Pass that same definition to `TourMenu::add()` or the optional widget when centralizing those options.
+
+## Optional Twig placement
+
+For a page that deliberately places its control outside a menu, use the component:
+
+```twig
+<twig:Tour name="page" offer="once" version="1" />
+{# Or: <twig:Tour :tour="pageTour" /> #}
+```
+
+Choose a PHP menu control or a Twig widget for a given named tour. Both use the same step descriptors and shared controller. A menu control needs no companion widget. Adding `Tour:Step` descriptors for non-menu controls is independent of replay placement.
 
 ## Explicit controls
 
@@ -101,11 +143,22 @@ Tabler's existing `tourOptions()` helper is deliberately preserved. Its `tour` k
 
 Ordinary copy is text. Attributes are escaped server-side and Driver popovers escape text client-side; there is no trusted HTML boundary.
 
+## Replacing an application tour
+
+1. Add `TourStep` metadata to existing, authorized menu items and add a `TourMenu` replay item outside any user-role or old opt-in setting gate. Public tours still include only the menus that visitor can access.
+2. Replace hard-coded JavaScript selector lists with menu metadata or `<twig:Tour:Step>` beside non-menu controls. Keep stable target selectors on those controls.
+3. Remove the application tour controller and its `data-controller` / `tour#start` actions after switching the template. Keep Driver.js and its CSS installed for the bundle controller. Remove obsolete tour settings if nothing else reads them.
+4. Check the anonymous page, a signed-in page, mobile collapsed navigation, and replay. Closed children are skipped; explain the visible parent. Next never navigates to another page: visitors can replay the tour after navigating normally.
+
+Fotostory follows this pattern: a public navbar replay item added from PHP, typed metadata in its existing app/tenant menus, and explicit home-page controls. Its archive and beta-feature gates remain application concerns. Content refinement can happen independently in application translation catalogues.
+
+If the widget stays hidden, check for at least one **visible** target with usable copy, verify Flex registered the bundle/controller and CSS, and clear the app cache after linking source. Missing copy is reported at debug level. Rendering PHP attributes alone does not prove that the browser controller mounted.
+
 ## Identity, visibility and lifecycle
 
 - Every step needs a stable explicit `id`; neither routes nor random Knp names supply it. Menu identities are `<root-slot>[:<instance>]:<id>`. Set `instance` in metadata when the same slot/step represents distinct contexts. Use the same identity for desktop/mobile copies so only the first visible copy is included. Keep explicit step IDs distinct from scoped menu IDs.
-- One widget per named tour. Different names are independent; starting one closes the previous overlay. Numeric `order` sorts ascending, with rendered DOM order breaking ties.
-- The first-visit UI is an inline invitation with Start / Not now. It never opens a modal automatically. `offer="never"` (default) shows only the permanent “Explain this page” replay control. No eligible targets means no invitation or replay control.
+- Use a menu control (with responsive copies allowed) or one widget per named tour. Different names are independent; starting one closes the previous overlay. Numeric `order` sorts ascending, with rendered DOM order breaking ties.
+- The first-visit UI is an inline or menu-anchored invitation with Start / Not now. It never opens a modal automatically. `offer="never"` (default) shows only the permanent “Explain this page” replay control. No eligible targets means no invitation or replay control.
 - Starting or declining dismisses that invitation for the application/name/version. Replay always remains available. Storage failures fall back to the current controller's memory. Bump `version` when a revised tour should invite visitors again.
 - Closed dropdown and collapsed mobile children are skipped. Annotate their visible parent explicitly. The tour never opens, closes, clicks or navigates a menu item. Opening a menu normally makes its children eligible on the next replay. If any captured target disappears or becomes hidden during a tour, it closes safely; replay collects a fresh list.
 - Back / Next / Done, progress, Escape / Close, arrow keys and dialog-only Tab cycling are supported. Focus returns to the initiating control, or replay if it is no longer visible. Highlighted navigation cannot be activated during the tour. Reduced motion disables Driver animation and smooth scrolling.
