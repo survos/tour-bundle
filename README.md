@@ -7,7 +7,7 @@ Reusable, translated tours of rendered menus and explicit page controls. Driver.
 Install `survos/tour-bundle` through the application's configured package repository:
 
 ```bash
-composer require survos/tour-bundle
+composer require survos/tour-bundle:^2.42.23
 php bin/console importmap:install
 php bin/console cache:clear
 ```
@@ -53,7 +53,7 @@ use Survos\TourBundle\Model\Tour;
 
 public function __construct(private readonly TourMenu $tours) {}
 
-#[AsMenuListener(MenuSlot::NAVBAR_END)]
+#[AsMenuListener(MenuSlot::NAVBAR_MENU_END)]
 public function tourControl(MenuEvent $event): void
 {
     $this->tours->add($event->menu, new Tour('page', version: '1'), icon: 'tabler:help-circle');
@@ -61,6 +61,8 @@ public function tourControl(MenuEvent $event): void
 ```
 
 The item inherits the existing menu theme. `TourMenu::add()` accepts the parent menu, a typed `Tour`, an optional already translated `label`, and an optional `icon`. It mounts the shared controller on the real menu link, including keyboard support, visibility filtering, and focus restoration. No layout widget is required. Use any rendered slot, submenu, or an application's dedicated custom slot; a new slot must already have a place in the layout to be visible. The bundle does not add a hard-coded tour slot to every application.
+
+Slot choice retains the theme's responsive behavior. Tabler's `NAVBAR_END` ordinary links are desktop-only; `NAVBAR_MENU_END` remains available after expanding mobile navigation and is the slot Fotostory uses.
 
 `new Tour('page', offer: 'once')` optionally offers Start / Not now in a nonmodal invitation anchored to the first visible replay item. The default `offer: 'never'` keeps only the menu item. Responsive copies share dismissal and show one invitation. With no eligible steps the item and its wrapper are hidden.
 
@@ -88,7 +90,7 @@ $item->setExtra('tour', new TourStep('page', 'paper-search'));
 $item->setExtra('tourRoute', 'paper_search');
 ```
 
-Both Tabler `menu_renderer: survos` and `menu_renderer: knp` are supported. Knp mode also works when SurvosMenuBundle is not registered: Tabler installs the same generic link decoration hook. These changes to menu-bundle, Tabler and tour-bundle must be consumed together (minimum coordinated version 2.42.23, or current dev-main while that release is pending); older Tabler versions do not resolve tour extras. Custom legacy templates must call `menu_link_attributes(item)` where they render a link, and escape attribute values. Composable themes already receive decorated `item.linkAttributes`.
+Both Tabler `menu_renderer: survos` and `menu_renderer: knp` are supported. Knp mode also works when SurvosMenuBundle is not registered: Tabler installs the same generic link decoration hook. These changes to menu-bundle, Tabler and tour-bundle were released together in **2.42.23**; use `^2.42.23` or later for each installed integration package. Older Tabler versions do not resolve tour extras. Custom legacy templates must call `menu_link_attributes(item)` where they render a link, and escape attribute values. Composable themes already receive decorated `item.linkAttributes`.
 
 ## Typed metadata
 

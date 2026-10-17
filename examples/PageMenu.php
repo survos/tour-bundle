@@ -20,7 +20,7 @@ final class PageMenu
     {
     }
 
-    #[AsMenuListener(MenuSlot::NAVBAR_END)]
+    #[AsMenuListener(MenuSlot::NAVBAR_MENU_END)]
     public function replay(MenuEvent $event): void
     {
         // Any existing rendered slot works; no companion Twig widget is required.

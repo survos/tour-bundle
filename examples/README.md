@@ -13,7 +13,7 @@ Adapt these files in an application with autowired services, Tabler menus, and t
 
 The listener uses the typed `TourStep` DTO. `order` controls sequence and `id` is stable across renders. The destination route supplies `.tour` copy in the `routes` domain. The route-less help link supplies its own copy key and domain. Nothing has to be collected separately from the menu.
 
-The listener adds the replay control to `NAVBAR_END` in PHP. Use any slot your layout already renders, or add it to an existing submenu. No new Twig is needed for menu integration. The layout snippet is an optional alternative for pages placing a control outside menus; do not combine it with a menu control for the same named tour. The page snippet's explicit step joins the tour automatically; keep the control's real behavior in the application.
+The listener adds the replay control to `NAVBAR_MENU_END` in PHP, including expanded mobile navigation. Use any slot your layout already renders, or add it to an existing submenu; its usual responsive behavior still applies. No new Twig is needed for menu integration. The layout snippet is an optional alternative for pages placing a control outside menus; do not combine it with a menu control for the same named tour. The page snippet's explicit step joins the tour automatically; keep the control's real behavior in the application.
 
 To share a typed tour definition with both PHP and Twig, define it once in your application service and expose it as a template variable:
 
