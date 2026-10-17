@@ -6,6 +6,7 @@ namespace Survos\TourBundle\Menu;
 
 use Knp\Menu\ItemInterface;
 use Survos\MenuBundle\Renderer\LinkAttributesDecoratorInterface;
+use Survos\TourBundle\Model\TourStep;
 use Survos\TourBundle\Service\CopyResolver;
 
 final class TourMenuDecorator implements LinkAttributesDecoratorInterface
@@ -17,6 +18,7 @@ final class TourMenuDecorator implements LinkAttributesDecoratorInterface
     public function decorate(ItemInterface $item, string $label, array $options = []): array
     {
         $metadata = $item->getExtra('tour');
+        $metadata = $metadata instanceof TourStep ? $metadata->toArray() : $metadata;
         if (!is_array($metadata) || !$item->isDisplayed()) {
             return [];
         }

@@ -13,6 +13,7 @@ use Survos\MenuBundle\Event\MenuEvent;
 use Survos\MenuBundle\Renderer\ThemeRenderer;
 use Survos\MenuBundle\Service\MenuDispatcher;
 use Survos\TablerBundle\Menu\MenuBuilderTrait;
+use Survos\TourBundle\Model\TourStep;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -45,7 +46,7 @@ final class FixturePage
     {
         $menu = $event->menu;
         $role = $event->getOption('role', 'anonymous');
-        $this->add($menu, 'fixture_search', label: 'Newspapers', tour: ['id' => 'search', 'order' => 10]);
+        $this->add($menu, 'fixture_search', label: 'Newspapers', tour: new TourStep('page', 'search', 10));
         $this->add($menu, uri: '#text', label: 'Search text', tour: ['id' => 'text', 'order' => 20, 'content' => 'Search article text. Generated groups may be partial and unreviewed.']);
         $more = $this->addSubmenu($menu, 'More', tour: ['id' => 'more', 'content' => 'More ways to explore this paper.', 'order' => 30]);
         $this->add($more, 'fixture_dates', label: 'Issue dates', tour: ['id' => 'dates', 'order' => 40]);

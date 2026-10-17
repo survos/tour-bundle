@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Survos\TourBundle\Twig\Components;
 
+use Survos\TourBundle\Model\Tour as TourDefinition;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\UX\TwigComponent\Attribute\AsTwigComponent;
 
@@ -16,6 +17,15 @@ final class Tour
 
     public function __construct(private readonly TranslatorInterface $translator, public readonly string $appId = 'app')
     {
+    }
+
+    public function mount(?TourDefinition $tour = null): void
+    {
+        if (null !== $tour) {
+            $this->name = $tour->name;
+            $this->version = $tour->version;
+            $this->offer = $tour->offer;
+        }
     }
 
     public function getLabels(): array

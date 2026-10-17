@@ -90,4 +90,20 @@ final class IntegrationTest extends TestCase
             $kernel->shutdown();
         }
     }
+
+    public function testLayoutAcceptsATypedTourDefinition(): void
+    {
+        $kernel = new Kernel('standalone', true, false);
+        $kernel->boot();
+        try {
+            $html = $kernel->getContainer()->get('fixture.twig')->createTemplate('<twig:Tour :tour="definition" />')->render([
+                'definition' => new \Survos\TourBundle\Model\Tour('archive', version: '3', offer: 'once'),
+            ]);
+            self::assertStringContainsString('name-value="archive"', $html);
+            self::assertStringContainsString('version-value="3"', $html);
+            self::assertStringContainsString('offer-value="once"', $html);
+        } finally {
+            $kernel->shutdown();
+        }
+    }
 }

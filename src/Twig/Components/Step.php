@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Survos\TourBundle\Twig\Components;
 
+use Survos\TourBundle\Model\ResolvedTourStep;
 use Survos\TourBundle\Model\TourStep;
 use Survos\TourBundle\Service\CopyResolver;
 use Symfony\UX\TwigComponent\Attribute\AsTwigComponent;
@@ -27,14 +28,14 @@ final class Step
     {
     }
 
-    public function getDescriptor(): ?TourStep
+    public function getDescriptor(): ?ResolvedTourStep
     {
-        return $this->copy->resolve([
-            'name' => $this->name, 'id' => $this->id, 'selector' => $this->selector,
-            'title' => $this->title, 'titleKey' => $this->titleKey,
-            'content' => $this->content, 'contentKey' => $this->contentKey,
-            'domain' => $this->domain, 'parameters' => $this->parameters,
-            'order' => $this->order, 'placement' => $this->placement,
-        ]);
+        return $this->copy->resolve(new TourStep(
+            $this->name, $this->id, $this->order,
+            title: $this->title, titleKey: $this->titleKey,
+            content: $this->content, contentKey: $this->contentKey,
+            domain: $this->domain, parameters: $this->parameters,
+            placement: $this->placement, selector: $this->selector,
+        ));
     }
 }

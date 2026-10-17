@@ -6,6 +6,7 @@ namespace Survos\TourBundle\Service;
 
 use Psr\Log\LoggerInterface;
 use Survos\FieldBundle\Registry\RouteMetaRegistry;
+use Survos\TourBundle\Model\ResolvedTourStep;
 use Survos\TourBundle\Model\TourStep;
 use Symfony\Component\Translation\TranslatorBagInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -27,8 +28,9 @@ final class CopyResolver
      *
      * @param array<string, mixed> $options
      */
-    public function resolve(array $options, string $label = '', ?string $route = null, string $scope = ''): ?TourStep
+    public function resolve(TourStep|array $options, string $label = '', ?string $route = null, string $scope = ''): ?ResolvedTourStep
     {
+        $options = $options instanceof TourStep ? $options->toArray() : $options;
         $id = $options['id'] ?? null;
         if (!is_string($id) || '' === trim($id)) {
             throw new \InvalidArgumentException('A tour step requires a stable, explicit id.');
@@ -50,11 +52,11 @@ final class CopyResolver
             return null;
         }
         $placement = $options['placement'] ?? 'bottom';
-        if (!in_array($placement, ['top', 'right', 'bottom', 'left', 'over'], true)) {
+        if (!in_array($placement, TourStep::PLACEMENTS, true)) {
             throw new \InvalidArgumentException('Invalid tour step placement.');
         }
 
-        return new TourStep(
+        return new ResolvedTourStep(
             $options['name'] ?? $options['tour'] ?? 'page',
             ('' === $scope ? '' : $scope.':').$id,
             strip_tags($title),

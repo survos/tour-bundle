@@ -4,7 +4,7 @@ Reusable, translated tours of rendered menus and explicit page controls. Driver.
 
 ## Install and configure
 
-After the coordinated mono changes are released, install `survos/tour-bundle` through the application's configured Satis repository. For local development use the existing `monolink` workflow; do not copy bundles into vendor or add Composer repository overrides. This implementation does not publish packages.
+Install `survos/tour-bundle` through the application's configured Satis repository. For local development use the existing `monolink` workflow; do not copy bundles into vendor or add Composer repository overrides. This implementation does not publish packages.
 
 Flex must register `Survos\TourBundle\SurvosTourBundle`, the required kit bundle, and the usual TwigComponent/Stimulus bundles. Its UX recipe reads `assets/package.json`, registers `@survos/tour-bundle` in `assets/controllers.json`, and adds `driver.js` and `driver.js/dist/driver.css` to `importmap.php`. The CSS autoimport is required. Keep the application's standard Stimulus bootstrap. No app tour controller is needed.
 
@@ -25,12 +25,13 @@ use Survos\MenuBundle\Attribute\AsMenuListener;
 use Survos\MenuBundle\Event\MenuEvent;
 use Survos\MenuBundle\MenuSlot;
 use Survos\TablerBundle\Menu\MenuBuilderTrait;
+use Survos\TourBundle\Model\TourStep;
 
 #[AsMenuListener(MenuSlot::PAGE_NAV)]
 public function pageNav(MenuEvent $event): void
 {
     $this->add($event->menu, 'paper_search', label: 'navigation.newspapers',
-        tour: ['name' => 'page', 'id' => 'paper-search', 'order' => 20]);
+        tour: new TourStep('page', 'paper-search', order: 20));
 }
 ```
 
@@ -49,24 +50,27 @@ This is the normal consumption API. Menus remain the source of navigation. Tour 
 Route-less actions supply explicit copy (and their existing URI/action):
 
 ```php
-$this->add($menu, uri: '#text', label: 'Search text', tour: [
-    'name' => 'page', 'id' => 'text-search',
-    'contentKey' => 'navigation.text_search_help', 'domain' => 'messages',
-    'parameters' => ['%paper%' => $paperName], 'order' => 30,
-]);
-$this->addSubmenu($menu, 'More', tour: [
-    'id' => 'more', 'content' => 'More ways to explore this paper.',
-]);
+$this->add($menu, uri: '#text', label: 'Search text', tour: new TourStep('page', 'text-search', order: 30,
+    contentKey: 'navigation.text_search_help', domain: 'messages',
+    parameters: ['%paper%' => $paperName],
+));
+$this->addSubmenu($menu, 'More', tour: new TourStep('page', 'more', content: 'More ways to explore this paper.'));
 ```
 
 With menu-bundle alone, use ordinary Knp extras on an **actually created and authorized** item:
 
 ```php
-$item->setExtra('tour', ['name' => 'page', 'id' => 'paper-search']);
+$item->setExtra('tour', new TourStep('page', 'paper-search'));
 $item->setExtra('tourRoute', 'paper_search');
 ```
 
-Both Tabler `menu_renderer: survos` and `menu_renderer: knp` are supported. Knp mode also works when SurvosMenuBundle is not registered: Tabler installs the same generic link decoration hook. These changes to menu-bundle, Tabler and tour-bundle must be consumed together (minimum coordinated version 2.42.23); older Tabler versions do not resolve tour extras. Custom legacy templates must call `menu_link_attributes(item)` where they render a link, and escape attribute values. Composable themes already receive decorated `item.linkAttributes`.
+Both Tabler `menu_renderer: survos` and `menu_renderer: knp` are supported. Knp mode also works when SurvosMenuBundle is not registered: Tabler installs the same generic link decoration hook. These changes to menu-bundle, Tabler and tour-bundle must be consumed together (minimum coordinated version 2.42.23, or current dev-main while that release is pending); older Tabler versions do not resolve tour extras. Custom legacy templates must call `menu_link_attributes(item)` where they render a link, and escape attribute values. Composable themes already receive decorated `item.linkAttributes`.
+
+## Typed metadata
+
+`Survos\TourBundle\Model\TourStep` is the author-facing, immutable PHP metadata DTO. Constructor arguments start with `Tour|string $tour`, stable `string $id`, and `int $order = 0`. Named options are `title`, `content`, `titleKey`, `contentKey`, `domain`, `parameters`, `placement`, `selector`, and `instance`. Invalid identities and placements fail at construction. Arrays and Tabler `tourOptions()` remain supported for compatibility.
+
+`Survos\TourBundle\Model\Tour` holds `name`, `version` and invitation `offer`. Share it with steps using `new TourStep($tour, 'paper-search', order: 20)` and pass it to the widget as `<twig:Tour :tour="tour" />`. The simple string-name widget API remains available. Copy resolution produces a separate `ResolvedTourStep`; consumers never construct translated renderer payloads.
 
 ## Explicit controls
 
